@@ -35,4 +35,4 @@ spot/candle.{market_id}.{timeframe}
 ## См. также
 
 - [Обзор публичного WS](README.md)
-- [REST: история свечей](../rest/market.md)
+- [REST: история свечей](../rest/market/history.md)

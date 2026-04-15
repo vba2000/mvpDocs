@@ -28,4 +28,4 @@ spot/aggregate_price
 ## См. также
 
 - [Обзор публичного WS](README.md)
-- [REST: aggregate-price](../../private/rest/other.md)
+- [REST: aggregate-price](../../private/rest/other/aggregate-price.md)

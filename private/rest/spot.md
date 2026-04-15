@@ -1,166 +1,36 @@
 # Приватный REST: `/spot/*`
 
-Префикс **`/spot`**. Аутентификация обязательна. Для ряда GET допускается query **`userId`** только у **OPERATOR** (см. описание каждого метода).
+Префикс **`/spot`**. Аутентификация обязательна. Для ряда GET допускается query **`userId`** только у **OPERATOR** (см. подстраницы и OpenAPI).
 
-Обёртка ответа: стандартная (`result` содержит DTO ниже).
+Обёртка ответа: стандартная (`result` содержит DTO).
 
----
+## Каталог методов
 
-## POST `/spot/orders/create`
+### Ордера (изменение состояния)
 
-**Назначение:** создать спотовый ордер.
+| Метод | Путь | Кратко | Подробно |
+|-------|------|--------|----------|
+| POST | `/spot/orders/create` | Новый ордер, тело `OrderCreateRequest` → `CommandResponseDto` | **[orders-create.md](spot/orders-create.md)** (поля, enum, правила) |
+| POST | `/spot/orders/cancel` | Отмена: query `orderId` **или** `clientOrderId` → `CommandResponseDto` | — |
+| POST | `/spot/orders/cancel-and-replace` | Тело `CancelAndReplaceRequest` → `CommandResponseDto` | OpenAPI |
+| POST | `/spot/orders/batch/create` | Тело `BatchOrderCreateRequest` → `BatchCommandResponseDto` | — |
+| POST | `/spot/orders/batch/cancel` | Тело `BatchOrderCancelRequest` → `BatchCommandResponseDto` | — |
+| POST | `/spot/orders/cancel-all` | Тело `CancelAllOrdersRequest` (опц. фильтр рынка) → `BatchCommandResponseDto` | OpenAPI |
 
-**Тело:** `OrderCreateRequest`
+### Ордера и сделки (чтение)
 
-| Поле | Тип | Описание |
-|------|-----|----------|
-| `marketId` | string | Рынок, напр. `BTC_USDT` |
-| `baseAssetId`, `quoteAssetId` | string | Активы пары |
-| `side` | enum | `BUY` / `SELL` |
-| `orderType` | enum | `LIMIT`, `MARKET`, стоп-типы и т.д. |
-| `timeInForce` | enum | `GTC`, `IOC`, `FOK`, `GTD` (по умолчанию GTC) |
-| `quantity` | string | Количество (decimal) |
-| `quoteAmount` | string? | Для MARKET BUY |
-| `price` | string? | Цена лимита |
-| `stopPrice` | string? | Стоп-цена |
-| `postOnly` | boolean | Только мейкер |
-| `accountType` | enum | Обычно `SPOT` |
-| `marketSeq` | long? | Опционально для согласованности |
-| `expiresAt`, `timestamp` | string? | ISO/строковые метки по контракту API |
-| `clientOrderId` | string? | Клиентский идентификатор |
+| Метод | Путь | Кратко |
+|-------|------|--------|
+| GET | `/spot/orders/active` | Активные ордера; фильтры `symbol`, `orderId`, `clientOrderId`, `orderTypeFilter`, `userId` (OPERATOR) → `SpotActiveOrdersResponseDto` |
+| GET | `/spot/orders/history` | История ордеров, курсор: фильтры по символу/типу/датам, `includeTrades`, `limit`≤100, `cursor`, `userId` → `SpotOrdersHistoryResponseDto` |
+| GET | `/spot/trades/history` | Исполненные сделки, Spring `Pageable` + фильтры рынка/дат/`userId` → `TradesHistoryResponseDto` |
+| GET | `/spot/executions/history` | История исполнений (fills), курсор → `ExecutionsHistoryResponseDto` |
+| GET | `/spot/deals/history` | Сделки матчера в разрезе ордера, `Pageable` → `DealsHistoryResponseDto` |
 
-**Ответ `result`:** `CommandResponseDto` — `success`, `message`, `orderId?`, `clientOrderId?`.
-
----
-
-## POST `/spot/orders/cancel`
-
-**Назначение:** отменить активный ордер.
-
-| Параметр query | Обяз. | Описание |
-|-----------------|-------|----------|
-| `orderId` | одно из двух | Системный ID ордера |
-| `clientOrderId` | одно из двух | Клиентский ID |
-
-**Ответ `result`:** `CommandResponseDto`.
-
----
-
-## POST `/spot/orders/cancel-and-replace`
-
-**Назначение:** атомарно отменить ордер и выставить новый.
-
-**Тело:** `CancelAndReplaceRequest` (см. OpenAPI).
-
-**Ответ `result`:** `CommandResponseDto`.
-
----
-
-## POST `/spot/orders/batch/create`
-
-**Назначение:** пакетное создание ордеров.
-
-**Тело:** `BatchOrderCreateRequest`.
-
-**Ответ `result`:** `BatchCommandResponseDto` — `results[]` (`CommandResponseDto`), `totalSuccess`, `totalFailed`.
-
----
-
-## POST `/spot/orders/batch/cancel`
-
-**Назначение:** пакетная отмена по списку ID.
-
-**Тело:** `BatchOrderCancelRequest`.
-
-**Ответ `result`:** `BatchCommandResponseDto`.
-
----
-
-## POST `/spot/orders/cancel-all`
-
-**Назначение:** отменить все активные ордера пользователя.
-
-**Тело:** `CancelAllOrdersRequest` (фильтр по рынку — см. OpenAPI).
-
-**Ответ `result`:** `BatchCommandResponseDto`.
-
----
-
-## GET `/spot/orders/active`
-
-**Назначение:** активные лимитные и стоп-ордера.
-
-| Параметр | Обяз. | Описание |
-|----------|-------|----------|
-| `symbol` | нет | Фильтр рынка |
-| `orderId`, `clientOrderId` | нет | Точечный фильтр |
-| `orderTypeFilter` | нет | `LIMIT`, `MARKET`, … |
-| `userId` | нет | OPERATOR: чужой пользователь |
-
-**Ответ `result`:** `SpotActiveOrdersResponseDto` (см. OpenAPI).
-
----
-
-## GET `/spot/orders/history`
-
-**Назначение:** история ордеров с курсором.
-
-| Параметр | Описание |
-|----------|----------|
-| `symbol`, `orderId`, `clientOrderId`, `orderTypeFilter`, `side` | Фильтры |
-| `dateFromMs`, `dateToMs` | Интервал (epoch ms) |
-| `includeTrades` | boolean, по умолчанию false |
-| `limit` | размер страницы, макс. 100, default 100 |
-| `cursor` | курсор |
-| `userId` | OPERATOR |
-
-**Ответ `result`:** `SpotOrdersHistoryResponseDto`.
-
----
-
-## GET `/spot/trades/history`
-
-**Назначение:** исполненные сделки пользователя (пагинация Spring `Pageable`).
-
-| Параметр | Описание |
-|----------|----------|
-| `marketId`, `marketQuery`, `direction`, `status` | Фильтры |
-| `dateFromMs`, `dateToMs` | Интервал |
-| `userId` | OPERATOR; без него — все пользователи для OPERATOR |
-
-Плюс стандартные `page`, `size`, `sort` (см. OpenAPI).
-
-**Ответ `result`:** `TradesHistoryResponseDto`.
-
----
-
-## GET `/spot/executions/history`
-
-**Назначение:** история исполнений (fills) с курсором.
-
-| Параметр | Описание |
-|----------|----------|
-| `symbol`, `baseAsset`, `orderId`, `clientOrderId`, `tradeId`, `side` | Фильтры |
-| `dateFromMs`, `dateToMs` | Интервал |
-| `cursor`, `limit` (макс. 100, default 20) | Пагинация |
-| `userId` | OPERATOR |
-
-**Ответ `result`:** `ExecutionsHistoryResponseDto`.
-
----
-
-## GET `/spot/deals/history`
-
-**Назначение:** история сделок матчера «в разрезе ордера» (order-centric).
-
-Те же фильтры, что у trades history в целом; `Pageable`.
-
-**Ответ `result`:** `DealsHistoryResponseDto`.
-
----
+Полные схемы полей ответов — [Swagger / OpenAPI](https://cex-dev.web3tech.ru/api/v1/gateway/swagger-ui/index.html).
 
 ## См. также
 
 - [Счета](accounts.md)
-- [Приватный WS: торговые сообщения](../ws/client-messages.md)
+- [Приватный WS: сообщения клиента](../ws/client-messages.md)
 - [Обзор приватного REST](README.md)

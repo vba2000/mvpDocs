@@ -32,7 +32,7 @@ URL примера: `wss://cex-dev.web3tech.ru/api/v1/ws-private/ws/private`
 - [Поток `user`](stream-user.md) — батчи `UserEventBatchProto`
 - [Поток `rfq/provider`](stream-rfq-provider.md)
 - [Пуш `provider.markets`](stream-provider-markets.md)
-- [Сообщения от клиента (торги, RFQ)](client-messages.md)
+- [Сообщения от клиента (торги, RFQ)](client-messages.md) — [подписки](messages/subscribe-heartbeat.md), [спот](messages/spot-trading.md), [RFQ/MM](messages/rfq-mm.md)
 
 ## См. также
 

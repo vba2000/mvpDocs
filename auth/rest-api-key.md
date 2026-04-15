@@ -217,4 +217,5 @@ const wsSig = crypto.createHmac("sha256", secret).update(wsMsg, "utf8").digest("
 
 - [WebSocket: подпись отличается](websocket.md)
 - [Сессия REST](rest-session.md)
+- [POST `/spot/orders/create`: поля и enum](../private/rest/spot/orders-create.md)
 - [← Обзор авторизации](README.md)

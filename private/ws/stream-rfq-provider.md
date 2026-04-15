@@ -26,5 +26,5 @@
 ## См. также
 
 - [Приватный REST: RFQ](../rest/rfq.md)
-- [Сообщения клиента: firm/raw RFQ](client-messages.md)
+- [Сообщения клиента: firm/raw RFQ](messages/rfq-mm.md)
 - [Обзор приватного WS](README.md)

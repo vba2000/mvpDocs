@@ -18,11 +18,11 @@
 1. **[Основные понятия](concepts.md)** — публичное/приватное, форматы ответов, роли.
 2. **Авторизация** — [обзор](auth/README.md), [REST: API-ключ](auth/rest-api-key.md), [REST: сессия](auth/rest-session.md), [WebSocket](auth/websocket.md).
 3. **Публичные данные**
-   - REST: [обзор](public/rest/README.md), [рынок `/market`](public/rest/market.md), [публичные `/auth/*`](public/rest/auth-endpoints.md).
+   - REST: [обзор](public/rest/README.md), [рынок `/market` (индекс + подстраницы)](public/rest/market.md), [публичные `/auth/*`](public/rest/auth-endpoints.md).
    - WebSocket: [подключение и протокол](public/ws/README.md), потоки: [стакан](public/ws/stream-orderbook.md), [сделки](public/ws/stream-trades.md), [тикер](public/ws/stream-ticker.md), [свечи](public/ws/stream-candle.md), [агрегированная цена](public/ws/stream-aggregate-price.md).
 4. **Приватные данные**
-   - REST: [обзор](private/rest/README.md), [Spot](private/rest/spot.md), [счета](private/rest/accounts.md), [RFQ](private/rest/rfq.md), [прочее и админка](private/rest/other.md).
-   - WebSocket: [обзор](private/ws/README.md), [поток `user`](private/ws/stream-user.md), [RFQ провайдера](private/ws/stream-rfq-provider.md), [`provider.markets`](private/ws/stream-provider-markets.md), [сообщения клиента](private/ws/client-messages.md).
+   - REST: [обзор](private/rest/README.md), [Spot](private/rest/spot.md) ([создание ордера](private/rest/spot/orders-create.md)), [счета](private/rest/accounts.md), [RFQ](private/rest/rfq.md), [прочее / админка](private/rest/other.md).
+   - WebSocket: [обзор](private/ws/README.md), [поток `user`](private/ws/stream-user.md), [RFQ провайдера](private/ws/stream-rfq-provider.md), [`provider.markets`](private/ws/stream-provider-markets.md), [сообщения клиента](private/ws/client-messages.md) ([спот](private/ws/messages/spot-trading.md), [RFQ](private/ws/messages/rfq-mm.md)).
 5. **Protobuf** — [каталог `protos/`](protos/README.md), файл [`protos/ws.proto`](protos/ws.proto).
 
 ## Машиночитаемые схемы

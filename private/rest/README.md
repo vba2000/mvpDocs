@@ -6,15 +6,12 @@
 
 ## Префиксы
 
-| Префикс | Документ | Описание |
-|---------|----------|----------|
-| `/spot/*` | [spot.md](spot.md) | Спотовые ордера и история |
+| Префикс | Индекс | Описание |
+|---------|--------|----------|
+| `/spot/*` | [spot.md](spot.md) | Ордера и история; подробно: [spot/orders-create.md](spot/orders-create.md) |
 | `/accounts/*` | [accounts.md](accounts.md) | Балансы, комиссии, переводы, депозиты, история |
-| `/rfq/*` | [rfq.md](rfq.md) | RFQ, котировки; часть методов — роль MARKET_MAKER |
-| `/aggregate-price/*` | [other.md](other.md) | Агрегированные цены |
-| `/auth/*` (кроме публичных) | [other.md](other.md) | Профиль, API-ключи, сессии |
-| `/users/*` | [other.md](other.md) | Только **OPERATOR** |
-| `/admin/*` | [other.md](other.md) | Админ-сессии и история по userId |
+| `/rfq/*` | [rfq.md](rfq.md) | RFQ и котировки (часть — **MARKET_MAKER**) |
+| `/aggregate-price/*` и др. | [other.md](other.md) | Агрегат, приватный `/auth`, `/users`, `/admin` — см. [other/](other/) |
 
 Параметр **`userId`** в query там, где он указан, действителен **только для OPERATOR**; обычные пользователи его игнорируют.
 
