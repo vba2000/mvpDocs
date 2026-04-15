@@ -1,0 +1,18 @@
+# Локальный контекст для агента / IDE (не коммитить)
+agent.md
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Редакторы / IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Временные / локальные
+*.log
+.env
+.env.*

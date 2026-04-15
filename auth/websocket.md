@@ -41,6 +41,8 @@ signature = Base64( HMAC_SHA256(secret, UTF8(message)) )
 
 Фактический URL рукопожатия может быть `/ws/public` или `/ws/private` — **в подписи всё равно путь `/ws`**, как в реализации сервера.
 
+Готовые фрагменты на Python и JavaScript для этой строки: [rest-api-key.md — «WebSocket handshake (API key)»](rest-api-key.md#websocket-handshake-api-key).
+
 ## Способ 2: JWT
 
 - Заголовок `Authorization: Bearer <token>`, **или**
