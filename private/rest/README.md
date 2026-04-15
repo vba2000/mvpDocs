@@ -20,7 +20,8 @@
 
 ## OpenAPI
 
-Полные схемы: `GET {REST_BASE}/v3/api-docs`.
+- UI: [Swagger UI (dev)](https://cex-dev.web3tech.ru/api/v1/gateway/swagger-ui/index.html).
+- JSON: `GET {REST_BASE}/v3/api-docs`.
 
 ## См. также
 

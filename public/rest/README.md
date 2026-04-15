@@ -9,7 +9,8 @@
 
 ## Полная машиночитаемая схема
 
-OpenAPI: `GET {REST_BASE}/v3/api-docs` (например `https://cex-dev.web3tech.ru/api/v1/gateway/v3/api-docs`).
+- Интерактивно: [Swagger UI (dev)](https://cex-dev.web3tech.ru/api/v1/gateway/swagger-ui/index.html).
+- JSON OpenAPI: `GET {REST_BASE}/v3/api-docs` (dev: `https://cex-dev.web3tech.ru/api/v1/gateway/v3/api-docs`).
 
 ## Приватный REST
 

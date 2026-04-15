@@ -7,6 +7,7 @@
 | Назначение | URL |
 |------------|-----|
 | REST Gateway | `https://cex-dev.web3tech.ru/api/v1/gateway/` |
+| Swagger UI (dev) | [swagger-ui/index.html](https://cex-dev.web3tech.ru/api/v1/gateway/swagger-ui/index.html) |
 | WebSocket (публичный) | `wss://cex-dev.web3tech.ru/api/v1/ws-gw/ws/public` |
 | WebSocket (приватный) | `wss://cex-dev.web3tech.ru/api/v1/ws-private/ws/private` |
 
@@ -26,5 +27,5 @@
 
 ## Машиночитаемые схемы
 
-- REST: OpenAPI JSON — `GET /v3/api-docs` на Gateway (путь относительно базы REST; в dev обычно `https://cex-dev.web3tech.ru/api/v1/gateway/v3/api-docs`). Swagger UI: `/swagger-ui/`.
+- REST: интерактивная документация — [Swagger UI (dev)](https://cex-dev.web3tech.ru/api/v1/gateway/swagger-ui/index.html). Сырой OpenAPI JSON: `GET /v3/api-docs` относительно базы Gateway (dev: `https://cex-dev.web3tech.ru/api/v1/gateway/v3/api-docs`).
 - WebSocket (JSON-обёртка сообщений): в репозитории бэкенда — `websocket-gateway-app/src/main/resources/openapi/ws-json-openapi.yaml`; на развёрнутом WS-сервисе путь задаётся конфигом (см. `springdoc.ws-json-api-docs` в `application.yml`).
