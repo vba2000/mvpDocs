@@ -1,0 +1,329 @@
+syntax = "proto3";
+
+import "google/protobuf/timestamp.proto";
+
+package com.web3tech.cex.ws.proto;
+
+option java_package = "com.web3tech.cex.ws.proto.wsprivate";
+option java_multiple_files = true;
+
+message WsEnvelope {
+  int32 code = 1;
+  string msg = 2;
+  WsResult result = 3;
+  map<string, string> ext_info = 4;
+  int64 time = 5;
+}
+
+message WsResult {
+  oneof payload {
+    SubscribedEvent subscribed = 1;
+    UnsubscribedEvent unsubscribed = 2;
+    PingEvent ping = 3;
+    DataEvent data = 4;
+  }
+  string trace_id = 6;
+}
+
+message SubscribedEvent {
+  repeated string streams = 1;
+  string trace_id = 2;
+}
+
+message UnsubscribedEvent {
+  repeated string streams = 1;
+  string trace_id = 2;
+}
+
+message PingEvent {
+  string trace_id = 1;
+}
+
+message DataEvent {
+  string stream = 1;
+  bytes data = 2;
+  string trace_id = 3;
+}
+
+enum WsErrorCode {
+  WS_ERROR_CODE_UNSPECIFIED = 0;
+  SUBSCRIPTION_LIMIT_EXCEEDED = 1;
+  INVALID_STREAM = 2;
+  STREAM_NOT_SUBSCRIBED = 3;
+  INVALID_MESSAGE = 4;
+  AUTHENTICATION_REQUIRED = 5;
+  RATE_LIMIT_EXCEEDED = 6;
+  INTERNAL_ERROR = 7;
+}
+
+message SubscribeMessage {
+  repeated string streams = 1;
+  string trace_id = 2;
+}
+
+message UnsubscribeMessage {
+  repeated string streams = 1;
+  string trace_id = 2;
+}
+
+message PongMessage {
+  string trace_id = 1;
+}
+
+enum QuoteSideWs {
+  QUOTE_SIDE_WS_UNSPECIFIED = 0;
+  BID_WS = 1;
+  ASK_WS = 2;
+}
+
+message PriceLevelProto {
+  string price = 1;
+  string size = 2;
+  string trace_id = 3;
+}
+
+message PrivateWsClientMessage {
+  oneof payload {
+    SubscribeMessage subscribe = 1;
+    UnsubscribeMessage unsubscribe = 2;
+    PongMessage pong = 3;
+    SubmitFirmQuoteMessage submit_firm_quote = 4;
+    SubmitRawPriceMessage submit_raw_price = 5;
+    CreateRfqMessage create_rfq = 6;
+    CreateOrderMessage create_order = 7;
+    CancelOrderMessage cancel_order = 8;
+    BatchCreateOrderMessage batch_create_order = 9;
+    BatchCancelOrderMessage batch_cancel_order = 10;
+    CancelAllOrdersMessage cancel_all_orders = 11;
+  }
+  string trace_id = 12;
+}
+
+message SubmitFirmQuoteMessage {
+  int64 rfq_id = 1;
+  QuoteSideWs side = 2;
+  string price = 3;
+  string quantity = 4;
+  string min_quantity = 5;
+  int64 ttl_ms = 6;
+  string client_quote_id = 7;
+  string market_id = 8;
+  string trace_id = 9;
+}
+
+message CreateRfqMessage {
+  string market_id = 1;
+  string side = 2;
+  string quantity = 3;
+  string worst_price = 4;
+  int64 ttl_ms = 5;
+  string trace_id = 6;
+}
+
+message SubmitRawPriceMessage {
+  string symbol = 1;
+  string bid = 2;
+  string bid_size = 3;
+  string bid_min_size = 4;
+  string ask = 5;
+  string ask_size = 6;
+  string ask_min_size = 7;
+  int64 ttl_ms = 8;
+  repeated PriceLevelProto bids_levels = 9;
+  repeated PriceLevelProto asks_levels = 10;
+  string trace_id = 11;
+}
+
+message CreateOrderMessage {
+  string market_id = 1;
+  string side = 2;
+  string order_type = 3;
+  string time_in_force = 4;
+  string quantity = 5;
+  string price = 6;
+  string stop_price = 7;
+  string quote_amount = 8;
+  bool post_only = 9;
+  string account_type = 10;
+  string client_order_id = 11;
+  int64 expires_at_ms = 12;
+  string trace_id = 13;
+}
+
+message CancelOrderMessage {
+  string user_order_id = 1;
+  string account_type = 2;
+  int64 order_id = 3;
+  string trace_id = 4;
+}
+
+message BatchCreateOrderMessage {
+  repeated CreateOrderMessage orders = 1;
+  string trace_id = 2;
+}
+
+message BatchCancelOrderMessage {
+  repeated int64 order_ids = 1;
+  string account_type = 2;
+  string trace_id = 3;
+}
+
+message CancelAllOrdersMessage {
+  string account_type = 1;
+  string market_id = 2;
+  string trace_id = 3;
+}
+
+message UserEventBatchProto {
+  repeated UserEventProto events = 1;
+  string trace_id = 2;
+}
+
+message UserOrderProto {
+  string event = 1;
+  string user_order_id = 2;
+  string market_id = 3;
+  string status = 4;
+  optional string side = 5;
+  optional string order_type = 6;
+  optional string price = 7;
+  optional string quantity = 8;
+  optional string filled_quantity = 9;
+  optional string reason = 10;
+  string timestamp = 11;
+  int64 order_id = 12;
+  optional string base_asset = 13;
+  optional string quote_asset = 14;
+  optional string time_in_force = 15;
+  optional string remaining_quantity = 16;
+  optional string filled_quote_amount = 17;
+  optional string stop_price = 18;
+  optional bool post_only = 19;
+  optional string fee_asset = 20;
+  optional string fee_paid = 21;
+  optional string quote_quantity = 22;
+  optional int64 created_at = 23;
+  optional int64 updated_at = 24;
+  optional int64 closed_at = 25;
+  string trace_id = 26;
+}
+
+message UserOrdersProto {
+  string event = 1;
+  repeated UserOrderProto orders = 2;
+  string trace_id = 3;
+}
+
+message UserFillProto {
+  string event = 1;
+  string trade_id = 2;
+  string user_order_id = 3;
+  string market_id = 4;
+  string side = 5;
+  string price = 6;
+  string quantity = 7;
+  string timestamp = 8;
+  int64 order_id = 9;
+  string fee = 10;
+  string base_asset = 11;
+  string quote_asset = 12;
+  string quote_quantity = 13;
+  string fee_asset = 14;
+  bool is_maker = 15;
+  bool is_self_trade = 16;
+  int64 execution_id = 17;
+  string trace_id = 18;
+}
+
+message UserBalanceProto {
+  string event = 1;
+  string asset_id = 2;
+  string account_type = 3;
+  string available = 4;
+  string reserved = 5;
+  string timestamp = 6;
+  int64 version = 7;
+  string trace_id = 8;
+}
+
+message UserBalancesProto {
+  string event = 1;
+  repeated UserBalanceProto balances = 2;
+  string trace_id = 3;
+}
+
+message RfqQuoteProto {
+  int64 quote_id = 1;
+  int64 provider_user_id = 2;
+  string price = 3;
+  string quantity = 4;
+  optional string client_quote_id = 5;
+  string trace_id = 6;
+}
+
+message RfqEventProto {
+  string event = 1;
+  int64 rfq_id = 2;
+  string status = 3;
+  optional string market_id = 4;
+  optional string side = 5;
+  optional string quantity = 6;
+  repeated RfqQuoteProto quotes = 7;
+  optional int64 quote_id = 8;
+  optional string client_quote_id = 9;
+  optional int64 provider_user_id = 10;
+  optional string price = 11;
+  optional string reason = 12;
+  optional string error = 13;
+  optional int64 timeout_ms = 14;
+  string timestamp = 15;
+  string trace_id = 16;
+  string worst_price = 17;
+}
+
+message MarketsAvailableProto {
+  string event = 1;
+  repeated string markets = 2;
+  string trace_id = 3;
+}
+
+message UserTransferProto {
+  string event = 1;
+  string transfer_id = 2;
+  string asset_id = 3;
+  string amount = 4;
+  string from_account_type = 5;
+  string to_account_type = 6;
+  string timestamp = 7;
+  string status = 8;
+  string message = 9;
+  string from_available = 10;
+  string from_reserved = 11;
+  string to_available = 12;
+  string to_reserved = 13;
+  string created_at = 14;
+  string trace_id = 15;
+}
+
+message UserEventProto {
+  oneof payload {
+    UserOrdersProto orders = 1;
+    UserFillProto fill = 2;
+    UserBalanceProto balance = 3;
+    UserTransferProto transfer = 4;
+    RfqEventProto rfq = 5;
+    UserBalancesProto balances = 7;
+  }
+  string trace_id = 6;
+}
+
+message FirmQuoteRequestEvent {
+  int64 rfq_id = 1;
+  string market_id = 2;
+  string side = 3;
+  string quantity = 4;
+  int64 timeout_ms = 5;
+  repeated int64 provider_ids = 6;
+  google.protobuf.Timestamp created_at = 7;
+  string trace_id = 8;
+}

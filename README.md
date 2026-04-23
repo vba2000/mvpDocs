@@ -1,31 +1,56 @@
-# Документация внешнего API биржи
+# Документация внешней интеграции CEX
 
-Материалы для команд интеграции: REST Gateway, WebSocket-шлюз, авторизация по API-ключу и сессии.
+Документация описывает только те REST API и WebSocket-сценарии, которые пригодны для интеграции по `API key` и HMAC-подписи. Browser login, session-only методы, operator-only и admin-only API в этой версии не документируются как внешние интеграционные контракты.
 
-## Базовые URL (пример окружения dev)
+## Тестовая среда
 
 | Назначение | URL |
 |------------|-----|
-| REST Gateway | `https://cex-dev.web3tech.ru/api/v1/gateway/` |
-| Swagger UI (dev) | [swagger-ui/index.html](https://cex-dev.web3tech.ru/api/v1/gateway/swagger-ui/index.html) |
-| WebSocket (публичный) | `wss://cex-dev.web3tech.ru/api/v1/ws-gw/ws/public` |
-| WebSocket (приватный) | `wss://cex-dev.web3tech.ru/api/v1/ws-private/ws/private` |
+| REST Gateway | `https://cex-test.web3tech.ru/api/v1/gateway` |
+| Swagger UI | [https://cex-test.web3tech.ru/api/v1/gateway/swagger-ui/index.html#](https://cex-test.web3tech.ru/api/v1/gateway/swagger-ui/index.html#) |
+| OpenAPI JSON | [https://cex-test.web3tech.ru/api/v1/gateway/v3/api-docs](https://cex-test.web3tech.ru/api/v1/gateway/v3/api-docs) |
+| Test stand | [https://cex-test.web3tech.ru/](https://cex-test.web3tech.ru/) |
+| WebSocket public | `wss://cex-test.web3tech.ru/api/v1/ws-gw/ws/public` |
+| WebSocket private | `wss://cex-test.web3tech.ru/api/v1/ws-private/ws/private` |
 
-Пути API ниже указаны **относительно префикса REST** (без хоста). У продакшена префиксы могут совпадать по смыслу, но домен и версия пути задаются деплоем.
+Все REST пути в документации указаны относительно базы `https://cex-test.web3tech.ru/api/v1/gateway`. Для HMAC-подписи в REST используется путь после хоста, включая префикс `/api/v1/gateway` и query string.
 
-## Оглавление
+## Что входит в документацию
 
-1. **[Основные понятия](concepts.md)** — публичное/приватное, форматы ответов, роли.
-2. **Авторизация** — [обзор](auth/README.md), [REST: API-ключ](auth/rest-api-key.md), [REST: сессия](auth/rest-session.md), [WebSocket](auth/websocket.md).
-3. **Публичные данные**
-   - REST: [обзор](public/rest/README.md), [рынок `/market` (индекс + подстраницы)](public/rest/market.md), [публичные `/auth/*`](public/rest/auth-endpoints.md).
-   - WebSocket: [подключение и протокол](public/ws/README.md), потоки: [стакан](public/ws/stream-orderbook.md), [сделки](public/ws/stream-trades.md), [тикер](public/ws/stream-ticker.md), [свечи](public/ws/stream-candle.md), [агрегированная цена](public/ws/stream-aggregate-price.md).
-4. **Приватные данные**
-   - REST: [обзор](private/rest/README.md), [Spot](private/rest/spot.md) ([создание ордера](private/rest/spot/orders-create.md)), [счета](private/rest/accounts.md), [RFQ](private/rest/rfq.md), [прочее / админка](private/rest/other.md).
-   - WebSocket: [обзор](private/ws/README.md), [поток `user`](private/ws/stream-user.md), [RFQ провайдера](private/ws/stream-rfq-provider.md), [`provider.markets`](private/ws/stream-provider-markets.md), [сообщения клиента](private/ws/client-messages.md) ([спот](private/ws/messages/spot-trading.md), [RFQ](private/ws/messages/rfq-mm.md)).
-5. **Protobuf** — [каталог `protos/`](protos/README.md), файл [`protos/ws.proto`](protos/ws.proto).
+- Публичные REST market-методы.
+- Приватные REST-методы, доступные внешнему клиенту по `API key`: `spot`, `accounts`, `rfq` taker-side, `aggregate-price`.
+- Управление API keys.
+- Публичный и приватный WebSocket, включая режим `format=json`.
+- Интеграционные флоу с пошаговым описанием запроса, ответа и бизнес-смысла.
 
-## Машиночитаемые схемы
+## Что исключено
 
-- REST: интерактивная документация — [Swagger UI (dev)](https://cex-dev.web3tech.ru/api/v1/gateway/swagger-ui/index.html). Сырой OpenAPI JSON: `GET /v3/api-docs` относительно базы Gateway (dev: `https://cex-dev.web3tech.ru/api/v1/gateway/v3/api-docs`).
-- WebSocket (JSON-обёртка сообщений): в репозитории бэкенда — `websocket-gateway-app/src/main/resources/openapi/ws-json-openapi.yaml`; на развёрнутом WS-сервисе путь задаётся конфигом (см. `springdoc.ws-json-api-docs` в `application.yml`).
+- Session-only `/auth/*`, кроме операций управления `API key`.
+- Browser/OAuth flow.
+- `admin` и `users` API.
+- Operator-only параметры и сценарии, если они не нужны обычной внешней интеграции.
+- Market maker-only RFQ API и MM WebSocket-потоки как часть общей интеграции по API key.
+
+## Структура документации
+
+1. [Аутентификация REST по API key](auth/api-key-rest.md)
+2. [Аутентификация private WebSocket](auth/api-key-websocket.md)
+3. [Примеры подписи и запросов](auth/signing-examples.md)
+4. [Обзор REST API](rest/overview.md)
+5. [Market data](rest/market.md)
+6. [Spot trading](rest/spot.md)
+7. [Accounts](rest/accounts.md)
+8. [RFQ taker API](rest/rfq.md)
+9. [Aggregate price](rest/aggregate-price.md)
+10. [Обзор WebSocket](ws/overview.md)
+11. [Public WebSocket](ws/public.md)
+12. [Private WebSocket](ws/private.md)
+13. [JSON-формат сообщений](ws/message-format-json.md)
+14. [Protobuf/binary-формат](ws/message-format-protobuf.md)
+15. [Интеграционные сценарии](flows/quickstart.md)
+
+## Принципы чтения
+
+- Swagger и OpenAPI остаются основным источником формальных схем DTO и enum.
+- Эта документация дополняет Swagger: объясняет бизнес-флоу, порядок вызовов, правила подписи, ограничения, side effects и типовые ошибки.
+- Если OpenAPI и фактическое поведение сервера расходятся, в тексте это отмечается отдельно.

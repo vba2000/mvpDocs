@@ -1,0 +1,185 @@
+syntax = "proto3";
+
+package com.web3tech.cex.ws.proto;
+
+option java_package = "com.web3tech.cex.ws.proto.wspublic";
+option java_multiple_files = true;
+
+message WsEnvelope {
+  int32 code = 1;
+  string msg = 2;
+  WsResult result = 3;
+  map<string, string> ext_info = 4;
+  int64 time = 5;
+}
+
+message WsResult {
+  oneof payload {
+    SubscribedEvent subscribed = 1;
+    UnsubscribedEvent unsubscribed = 2;
+    PingEvent ping = 3;
+    DataEvent data = 4;
+  }
+  string trace_id = 6;
+}
+
+message SubscribedEvent {
+  repeated string streams = 1;
+  string trace_id = 2;
+}
+
+message UnsubscribedEvent {
+  repeated string streams = 1;
+  string trace_id = 2;
+}
+
+message PingEvent {
+  string trace_id = 1;
+}
+
+message DataEvent {
+  string stream = 1;
+  bytes data = 2;
+  string trace_id = 3;
+}
+
+enum WsErrorCode {
+  WS_ERROR_CODE_UNSPECIFIED = 0;
+  SUBSCRIPTION_LIMIT_EXCEEDED = 1;
+  INVALID_STREAM = 2;
+  STREAM_NOT_SUBSCRIBED = 3;
+  INVALID_MESSAGE = 4;
+  AUTHENTICATION_REQUIRED = 5;
+  RATE_LIMIT_EXCEEDED = 6;
+  INTERNAL_ERROR = 7;
+}
+
+message SubscribeMessage {
+  repeated string streams = 1;
+  string trace_id = 2;
+}
+
+message UnsubscribeMessage {
+  repeated string streams = 1;
+  string trace_id = 2;
+}
+
+message PongMessage {
+  string trace_id = 1;
+}
+
+enum QuoteSideWs {
+  QUOTE_SIDE_WS_UNSPECIFIED = 0;
+  BID_WS = 1;
+  ASK_WS = 2;
+}
+
+message PriceLevelProto {
+  string price = 1;
+  string size = 2;
+  string trace_id = 3;
+}
+
+message PublicWsClientMessage {
+  oneof payload {
+    SubscribeMessage subscribe = 1;
+    UnsubscribeMessage unsubscribe = 2;
+    PongMessage pong = 3;
+  }
+  string trace_id = 4;
+}
+
+message OrderbookSnapshotProto {
+  string event = 1;
+  string market_id = 2;
+  repeated PriceLevelProto bids = 3;
+  repeated PriceLevelProto asks = 4;
+  int64 market_seq = 5;
+  int32 depth = 6;
+  int64 seq_num = 7;
+  int64 timestamp_ms = 8;
+  string trace_id = 9;
+}
+
+message OrderbookDeltaProto {
+  string event = 1;
+  string market_id = 2;
+  string side = 3;
+  string price = 4;
+  string size = 5;
+  int64 market_seq = 6;
+  string trace_id = 7;
+}
+
+message TradeProto {
+  string event = 1;
+  string market_id = 2;
+  string trade_id = 3;
+  string price = 4;
+  string quantity = 5;
+  string side = 6;
+  string timestamp = 7;
+  string trace_id = 8;
+}
+
+message TickerProto {
+  string event = 1;
+  string market_id = 2;
+  optional string last_price = 3;
+  optional string best_bid = 4;
+  optional string best_ask = 5;
+  string volume_24h = 6;
+  optional string high_24h = 7;
+  optional string low_24h = 8;
+  optional string change_24h = 9;
+  string timestamp = 10;
+  optional string best_bid_size = 11;
+  optional string best_ask_size = 12;
+  optional string prev_price_24h = 13;
+  optional string turnover_24h = 14;
+  string trace_id = 15;
+}
+
+message AggregatePriceProto {
+  string event = 1;
+  string market_id = 2;
+  string aggregate_price = 3;
+  string change_24h = 4;
+  string timestamp = 5;
+  string trace_id = 6;
+}
+
+message CandleProto {
+  string event = 1;
+  string market_id = 2;
+  string timeframe = 3;
+  string open_time = 4;
+  string close_time = 5;
+  string open = 6;
+  string high = 7;
+  string low = 8;
+  string close = 9;
+  string volume = 10;
+  int64 trades = 11;
+  bool closed = 12;
+  string quote_volume = 13;
+  string trace_id = 14;
+}
+
+message OrderbookDeltaBatchProto {
+  string event = 1;
+  string market_id = 2;
+  repeated PriceLevelProto bids = 3;
+  repeated PriceLevelProto asks = 4;
+  int64 market_seq = 5;
+  int64 seq_num = 6;
+  int64 timestamp_ms = 7;
+  string trace_id = 8;
+}
+
+message TradeBatchProto {
+  string event = 1;
+  string market_id = 2;
+  repeated TradeProto trades = 3;
+  string trace_id = 4;
+}
