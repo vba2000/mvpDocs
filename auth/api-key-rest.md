@@ -9,7 +9,7 @@ REST-аутентификация для внешней интеграции с�
 - `timestamp` как защита от replay;
 - опциональный IP whitelist, если он задан при выпуске ключа.
 
-Этот способ нужен для серверных интеграций, торговых ботов, middle-layer сервисов и бэкендов партнеров.
+Этот способ нужен для серверных интеграций, торговых ботов, middle-layer сервисов и партнерских backend-систем. Это основной auth-механизм внешней спецификации для приватных REST-ручек gateway.
 
 ## Базовые заголовки
 
@@ -57,7 +57,7 @@ signature = Base64(HMAC_SHA256(secret, UTF8(message)))
    - активен ли он;
    - не истек ли срок действия;
    - попадает ли IP в whitelist, если он настроен;
-   - укладывается ли timestamp в допустимое окно;
+   - укладывается ли timestamp в допустимое серверное окно;
    - совпадает ли HMAC-подпись.
 
 ## Ошибки авторизации
@@ -81,7 +81,11 @@ signature = Base64(HMAC_SHA256(secret, UTF8(message)))
 
 ### Публичные
 
-Методы `/market/*` не требуют `API key`. На них можно работать без подписи.
+Без `API key` доступны публичные read-only маршруты:
+
+- `/market/*`
+- `/network`
+- `GET /spot/orderbook`
 
 ### Приватные
 
@@ -89,19 +93,22 @@ signature = Base64(HMAC_SHA256(secret, UTF8(message)))
 
 - `spot`;
 - `accounts` кроме операторского депозита;
+- `deposit-addresses`;
 - `rfq` taker-side;
 - `aggregate-price`.
 
 ## Управление API keys
 
-Выпуск и отзыв API key происходят через сессионные методы пользователя:
+Жизненный цикл API key существует отдельно от основного HMAC-контура. Выпуск и отзыв ключей происходят через пользовательский account flow и в этой спецификации описываются только как prerequisite внешней интеграции.
+
+Технически используются следующие методы:
 
 - `POST /auth/api-keys`
 - `GET /auth/api-keys`
 - `GET /auth/api-keys/{apiKeyId}`
 - `DELETE /auth/api-keys/{apiKeyId}`
 
-Эти методы нужны для жизненного цикла ключей, но не являются частью HMAC-интеграции торгового контура. Для них требуется пользовательская сессия, а не API key.
+Эти методы не входят в основной торговый/интеграционный контур и не используются для прямых вызовов по API key.
 
 ### Параметры при создании ключа
 
@@ -125,9 +132,11 @@ signature = Base64(HMAC_SHA256(secret, UTF8(message)))
 - Используйте отдельные ключи для разных сервисов и окружений.
 - Для торговых операций всегда задавайте `clientOrderId`.
 - Для account transfers задавайте `idempotencyKey`.
+- При auth-сбоях сначала проверяйте canonical path, body и timestamp drift.
 
 ## См. также
 
 - [signing-examples.md](signing-examples.md)
 - [api-key-websocket.md](api-key-websocket.md)
+- [../errors.md](../errors.md)
 - [../rest/overview.md](../rest/overview.md)

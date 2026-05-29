@@ -1,84 +1,11 @@
 syntax = "proto3";
 
+import "ws_common.proto";
+
 package com.web3tech.cex.ws.proto;
 
 option java_package = "com.web3tech.cex.ws.proto.wspublic";
 option java_multiple_files = true;
-
-message WsEnvelope {
-  int32 code = 1;
-  string msg = 2;
-  WsResult result = 3;
-  map<string, string> ext_info = 4;
-  int64 time = 5;
-}
-
-message WsResult {
-  oneof payload {
-    SubscribedEvent subscribed = 1;
-    UnsubscribedEvent unsubscribed = 2;
-    PingEvent ping = 3;
-    DataEvent data = 4;
-  }
-  string trace_id = 6;
-}
-
-message SubscribedEvent {
-  repeated string streams = 1;
-  string trace_id = 2;
-}
-
-message UnsubscribedEvent {
-  repeated string streams = 1;
-  string trace_id = 2;
-}
-
-message PingEvent {
-  string trace_id = 1;
-}
-
-message DataEvent {
-  string stream = 1;
-  bytes data = 2;
-  string trace_id = 3;
-}
-
-enum WsErrorCode {
-  WS_ERROR_CODE_UNSPECIFIED = 0;
-  SUBSCRIPTION_LIMIT_EXCEEDED = 1;
-  INVALID_STREAM = 2;
-  STREAM_NOT_SUBSCRIBED = 3;
-  INVALID_MESSAGE = 4;
-  AUTHENTICATION_REQUIRED = 5;
-  RATE_LIMIT_EXCEEDED = 6;
-  INTERNAL_ERROR = 7;
-}
-
-message SubscribeMessage {
-  repeated string streams = 1;
-  string trace_id = 2;
-}
-
-message UnsubscribeMessage {
-  repeated string streams = 1;
-  string trace_id = 2;
-}
-
-message PongMessage {
-  string trace_id = 1;
-}
-
-enum QuoteSideWs {
-  QUOTE_SIDE_WS_UNSPECIFIED = 0;
-  BID_WS = 1;
-  ASK_WS = 2;
-}
-
-message PriceLevelProto {
-  string price = 1;
-  string size = 2;
-  string trace_id = 3;
-}
 
 message PublicWsClientMessage {
   oneof payload {
@@ -99,6 +26,7 @@ message OrderbookSnapshotProto {
   int64 seq_num = 7;
   int64 timestamp_ms = 8;
   string trace_id = 9;
+  int64 matcher_seq = 10;
 }
 
 message OrderbookDeltaProto {
@@ -109,6 +37,7 @@ message OrderbookDeltaProto {
   string size = 5;
   int64 market_seq = 6;
   string trace_id = 7;
+  int64 matcher_seq = 8;
 }
 
 message TradeProto {
@@ -175,6 +104,7 @@ message OrderbookDeltaBatchProto {
   int64 seq_num = 6;
   int64 timestamp_ms = 7;
   string trace_id = 8;
+  int64 matcher_seq = 9;
 }
 
 message TradeBatchProto {
@@ -182,4 +112,11 @@ message TradeBatchProto {
   string market_id = 2;
   repeated TradeProto trades = 3;
   string trace_id = 4;
+}
+
+message MarkPriceProto {
+  string event = 1;
+  string market_id = 2;
+  string mark_price = 3;
+  int64 timestamp = 4;
 }

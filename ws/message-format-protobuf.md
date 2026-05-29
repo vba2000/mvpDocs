@@ -13,7 +13,51 @@
 
 ## Общая модель
 
-На wire-уровне клиент и сервер обмениваются protobuf frames. Логика сообщений соответствует тем же действиям, что и в JSON-режиме:
+На wire-уровне клиент и сервер обмениваются protobuf frames.
+
+Модель разделена на три файла:
+
+- `protos/ws_common.proto`
+- `protos/ws_public.proto`
+- `protos/ws_private.proto`
+
+Роли файлов:
+
+| Файл | Назначение |
+|------|------------|
+| `ws_common.proto` | общий server envelope, control messages, error enum, price level |
+| `ws_public.proto` | public client message и market payloads |
+| `ws_private.proto` | private client message и user/trading/RFQ payloads |
+
+## Wire model
+
+### Client -> Server
+
+- public socket принимает `PublicWsClientMessage`;
+- private socket принимает `PrivateWsClientMessage`.
+
+Это два разных wrapper type. Клиент не должен пытаться отправлять один и тот же бинарный frame на оба сокета.
+
+### Server -> Client
+
+Оба сокета отдают `WsEnvelope`, внутри которого лежит:
+
+- `subscribed`
+- `unsubscribed`
+- `ping`
+- `data`
+
+`DataEvent.data` это opaque `bytes`, которые клиент декодирует уже как конкретный payload по типу стрима.
+
+Именно поэтому binary-клиенту нужны одновременно:
+
+1. knowledge о stream name;
+2. mapping stream -> protobuf payload type;
+3. общий parser для `WsEnvelope`.
+
+## Общая логика действий
+
+Логика действий совпадает с JSON-режимом:
 
 - `subscribe`
 - `unsubscribe`
@@ -34,14 +78,51 @@
 - не нужно вручную учитывать stringified numbers в JSON;
 - для декодирования нужны `.proto` контракты и сгенерированные модели клиента.
 
-## Актуальные proto-файлы
+## Codegen expectations
 
-В репозитории документации лежат два самостоятельных контракта:
+- `ws_common.proto` должен генерироваться вместе с `ws_public.proto` и `ws_private.proto`;
+- `ws_public.proto` и `ws_private.proto` импортируют общий файл, поэтому isolated generation только одного файла без import resolution приведет к проблемам;
+- для server-to-client decoding сначала разбирается `WsEnvelope`, а затем его `data` поле.
 
-- `protos/ws_public.proto` для public WebSocket;
-- `protos/ws_private.proto` для private WebSocket.
+## Public payloads
 
-Оба файла уже содержат общий envelope и базовые сообщения, поэтому их можно использовать независимо друг от друга.
+Основные типы public data:
+
+- `OrderbookSnapshotProto`
+- `OrderbookDeltaProto`
+- `OrderbookDeltaBatchProto`
+- `TradeProto`
+- `TradeBatchProto`
+- `TickerProto`
+- `CandleProto`
+- `AggregatePriceProto`
+- `MarkPriceProto`
+
+Для orderbook в актуальном контракте присутствует `matcher_seq`, а trades в live-stream чаще приходят как `TradeBatchProto`.
+
+## Private payloads
+
+Основные типы private data:
+
+- `UserEventBatchProto`
+- `UserNotificationBatchProto`
+- `RfqEventProto`
+- `MarketsAvailableProto`
+
+В private сокете есть и client commands:
+
+- `create_order`
+- `cancel_order`
+- `batch_create_order`
+- `batch_cancel_order`
+- `cancel_all_orders`
+- `create_rfq`
+
+## Что важно для клиента
+
+- Public и private client frames это разные wrapper types.
+- Общий envelope вынесен в `ws_common.proto`.
+- Для private binary-интеграции нужно поддержать не только `user`, но и `notifications`, если клиент хочет live-статусы депозитов.
 
 ## Рекомендация
 

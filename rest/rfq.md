@@ -4,15 +4,6 @@
 
 RFQ-раздел предназначен для клиента, который хочет запросить котировку у платформы и затем отслеживать жизненный цикл RFQ. В этой документации описывается только taker-side интеграция, доступная обычному внешнему API key клиенту.
 
-Не документируются:
-
-- `POST /rfq/providers/quote`
-- `POST /rfq/quote/indicative`
-- `POST /rfq/quote/firm`
-- `GET /rfq/provider/quotes`
-
-Эти методы относятся к market maker-роли.
-
 ## Методы taker-side
 
 | Метод | Путь | Назначение |
@@ -85,7 +76,7 @@ Query:
 | `executionDeadline` | Дедлайн исполнения |
 | `createdAt` | Время создания |
 
-Статусы по OpenAPI:
+Фактические статусы RFQ:
 
 - `PENDING`
 - `QUOTING`
@@ -95,6 +86,22 @@ Query:
 - `EXPIRED`
 - `CANCELLED`
 - `FAILED`
+
+## State machine RFQ
+
+Упрощенно для taker-интегратора:
+
+1. `PENDING` — RFQ зарегистрирован.
+2. `QUOTING` — идет сбор/обработка котировок.
+3. `QUOTED` — появилась подходящая котировка.
+4. `EXECUTING` — система пытается исполнить RFQ.
+5. Финал:
+   - `EXECUTED`
+   - `EXPIRED`
+   - `CANCELLED`
+   - `FAILED`
+
+REST и private WS `user` должны рассматриваться как два способа чтения одного жизненного цикла.
 
 ## `POST /rfq/{rfqId}/cancel`
 
@@ -116,13 +123,25 @@ Query:
 - `limit`
 - `offset`
 
+Содержимое элементов повторяет `RfqResponseDto`, поэтому список можно использовать и как текущую ленту, и как исторический RFQ журнал.
+
 ## Рекомендуемый бизнес-флоу
 
 1. Получить рынок из `/market/rfq-exchange-info`.
 2. Запросить `GET /rfq/indicative-price`.
 3. Создать `POST /rfq/create`.
-4. Читать статус через `GET /rfq/{rfqId}` или private WebSocket события пользователя.
+4. Читать статус через `GET /rfq/{rfqId}` и private WebSocket `user`.
 5. При необходимости отменить `POST /rfq/{rfqId}/cancel`.
+
+## Что делает taker на каждом этапе
+
+| Этап | Действие клиента |
+|------|------------------|
+| До создания RFQ | Проверить market universe и indicative price |
+| Во время quoting | Не повторять create blindly, а читать статус |
+| При quoted/executing | Отслеживать progression через REST и WS |
+| При expired/cancelled/failed | Принимать решение о повторном запросе |
+| При executed | Сверять итог через RFQ state и user events |
 
 ## Типичные ошибки
 
@@ -130,6 +149,7 @@ Query:
 - `quantity` меньше минимального доступного объема.
 - `worstPrice` делает RFQ невыполнимым.
 - TTL слишком короткий для выполнения бизнес-сценария.
+- Клиент не различает `QUOTED` и `EXECUTING`, из-за чего преждевременно считает RFQ завершенным.
 
 ## См. также
 

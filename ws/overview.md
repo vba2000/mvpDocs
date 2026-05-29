@@ -31,7 +31,7 @@ WebSocket-контур разделен на два независимых сц�
 |---------|--------|---------|
 | Аутентификация | не требуется | обязательна |
 | Цель | market data | user events и команды |
-| Потоки | `spot/orderbook.*`, `spot/trades.*`, `spot/ticker.*`, `spot/candle.*`, `spot/aggregate_price` | `user`, служебные private streams |
+| Потоки | `spot/orderbook.*`, `spot/trades.*`, `spot/ticker.*`, `spot/candle.*`, `spot/aggregate_price` | `user`, `notifications` |
 | Client actions | `subscribe`, `unsubscribe`, `pong` | `subscribe`, `unsubscribe`, `pong`, trading/RFQ commands |
 
 ## Общий жизненный цикл соединения
@@ -49,6 +49,7 @@ WebSocket-контур разделен на два независимых сц�
 - Public и private нельзя смешивать: private socket не предназначен для market streams, а public socket не принимает private commands.
 - Для private API key WebSocket HMAC считается по фиксированной canonical string, а не по фактическому URL.
 - В JSON-режиме числа во многих payload полях сериализуются как строки.
+- Private socket после успешного входа автоматически подписывает клиента на `user` и `notifications`.
 
 ## См. также
 

@@ -92,8 +92,11 @@ JSON-режим нужен командам, которым удобнее ин�
 | `ping` | Heartbeat сервера |
 | `data` | Полезная нагрузка потока |
 | `error` | Ошибка протокола, авторизации или бизнес-операции |
+| `empty` | Технический пустой envelope |
 
 ## Ошибки
+
+Серверные ошибки в runtime кодируются числовыми кодами диапазона `4001`-`5000`, которые в JSON приходят как строки в поле `code`.
 
 Типовые причины ошибок:
 
@@ -104,10 +107,54 @@ JSON-режим нужен командам, которым удобнее ин�
 - некорректный JSON payload;
 - поле передано числом вместо строки.
 
+## Streams в JSON-режиме
+
+### Public
+
+Основные `stream` значения:
+
+- `spot/orderbook.<market_id>`
+- `spot/trades.<market_id>`
+- `spot/ticker.<market_id>`
+- `spot/candle.<market_id>.<timeframe>`
+- `spot/aggregate_price`
+
+### Private
+
+Основные `stream` значения:
+
+- `user`
+- `notifications`
+
+Для `user` payload содержит user event batch, для `notifications` — notification batch по депозитным операциям.
+
+### Как читать `user`
+
+Для внешнего клиента в `user` важны следующие смысловые категории payload:
+
+- `orders` — создание, обновление, отмена, закрытие ордеров;
+- `fill` — отдельные execution/trade события;
+- `balance` / `balances` — обновления свободного и зарезервированного остатка;
+- `transfer` — завершенный внутренний перевод;
+- `rfq` — изменение статуса RFQ и итог его исполнения.
+
+### Как читать `notifications`
+
+`notifications` используется для депозитного lifecycle:
+
+- появление новой операции;
+- переход в `CHECK`;
+- переход в финальный статус вроде `DEPOSITED`, `FAILED`, `REJECTED`, `REFUNDED`.
+
+Типовой production pattern:
+
+1. получать live envelopes через WS;
+2. при важных сменах статуса дополнительно перечитывать `GET /accounts/deposit-operations`.
+
 ## Когда выбирать JSON
 
 - интеграция делается быстро и без protobuf toolchain;
-- нужен websocket в браузерном proxy/service-layer;
+- нужен websocket в proxy/service-layer;
 - команда предпочитает human-readable payloads для отладки.
 
 ## Когда выбирать binary

@@ -2,16 +2,16 @@
 
 ## Назначение
 
-REST Gateway делится на две группы контрактов:
+REST Gateway для внешней интеграции делится на два контура:
 
-- публичные market-методы без аутентификации;
-- приватные методы, в которые внешний клиент входит по `API key` через заголовки `X-API-Key`, `X-Timestamp`, `X-Signature`.
+- публичный read-only слой без аутентификации;
+- приватный слой, который вызывается по `API key` и HMAC-подписи.
 
 Базовый URL тестовой среды: `https://cex-test.web3tech.ru/api/v1/gateway`
 
 ## Общая модель ответа
 
-Большинство успешных и ошибочных ответов приходят в единой обертке:
+Большинство ответов приходят в единой обертке:
 
 ```json
 {
@@ -23,42 +23,43 @@ REST Gateway делится на две группы контрактов:
 }
 ```
 
-### Поля обертки
-
 | Поле | Тип | Назначение |
 |------|-----|------------|
-| `code` | integer | Код результата. `0` обычно означает успешную обработку |
+| `code` | integer | Код результата; `0` обычно означает успешную обработку |
 | `msg` | string | Краткий текстовый статус |
 | `result` | object/array/scalar | Полезная нагрузка метода |
-| `extInfo` | object | Дополнительные детали ошибки или обработки |
+| `extInfo` | object | Дополнительные технические детали |
 | `time` | integer | Время формирования ответа на стороне Gateway |
 
-## Группы методов в этой документации
+## Группы методов
 
-| Группа | Аутентификация | Раздел |
-|--------|----------------|--------|
-| `/market/*` | не требуется | [market.md](market.md) |
-| `/spot/*` | `API key` | [spot.md](spot.md) |
+| Группа | Доступ | Раздел |
+|--------|--------|--------|
+| `/market/*` | публично | [market.md](market.md) |
+| `/network` | публично | [market.md](market.md) |
+| `GET /spot/orderbook` | публично | [market.md](market.md) |
+| `/spot/*` кроме `orderbook` | `API key` | [spot.md](spot.md) |
 | `/accounts/*` | `API key` | [accounts.md](accounts.md) |
+| `/deposit-addresses/*` | `API key` | [accounts.md](accounts.md) |
 | `/rfq/*` taker-side | `API key` | [rfq.md](rfq.md) |
 | `/aggregate-price/*` | `API key` | [aggregate-price.md](aggregate-price.md) |
-| `/auth/api-keys*` | сессия пользователя | [../auth/api-key-rest.md](../auth/api-key-rest.md) |
 
 ## Что не входит
 
-Внешняя интеграционная документация не описывает:
+Эта документация не покрывает как внешний интеграционный контракт:
 
 - `/users/*`;
 - `/admin/*`;
 - `POST /accounts/deposit`;
-- market maker-only RFQ endpoints;
-- browser/session-only auth flow вроде `/auth/login`, `/auth/callback`, `/auth/me`, `/auth/sessions`.
+- browser onboarding и account management flow;
+- market maker-only сценарии;
+- операторские impersonation-сценарии.
 
 ## Общие правила для приватных методов
 
-### 1. Подпись обязательна
+### HMAC-подпись обязательна
 
-Для всех приватных REST-методов строка подписи строится так:
+Для приватных REST-методов строка подписи строится так:
 
 ```text
 {timestamp}{METHOD}{pathWithQuery}{body}
@@ -69,32 +70,36 @@ REST Gateway делится на две группы контрактов:
 - `timestamp` совпадает с `X-Timestamp`;
 - `METHOD` всегда в верхнем регистре;
 - `pathWithQuery` включает путь после хоста и query string;
-- `body` это точная UTF-8 строка тела запроса, для `GET` обычно пустая строка.
+- `body` это точная UTF-8 строка тела запроса.
 
-Подробности и примеры приведены в [../auth/api-key-rest.md](../auth/api-key-rest.md).
+Подробности и примеры: [../auth/api-key-rest.md](../auth/api-key-rest.md).
 
-### 2. Денежные и количественные поля
+### Денежные и количественные поля
 
-Практически все цены, количества, суммы и идентификаторы торгового контура передаются как строки. Это важно для точности и для побайтного совпадения тела с HMAC-подписью.
+Цены, количества, суммы, quote budgets и многие торговые идентификаторы передаются строками. Это важно и для точности, и для побайтного совпадения тела запроса с HMAC-подписью.
 
-### 3. Параметр `userId`
+### Идемпотентность и retry-safe вызовы
 
-В OpenAPI у части методов встречается query-параметр `userId`. Он предназначен для операторских сценариев и не нужен обычной внешней интеграции по API key. В этой документации такие параметры не рассматриваются как целевой сценарий.
+Для production-интеграции нужно считать обязательными:
 
-### 4. Идемпотентность
-
-Там, где метод поддерживает `clientOrderId` или `idempotencyKey`, эти поля нужно считать обязательными для production-интеграции, даже если сервер не везде делает их формально required.
+- `clientOrderId` в торговых командах;
+- `idempotencyKey` в account transfer;
+- собственный client-side correlation id в retry сценариях.
 
 ## Типовой порядок интеграции
 
 1. Получить и сохранить `API key` и `secret`.
-2. Синхронизировать часы клиента через `GET /market/time`.
-3. Получить market metadata через `GET /market/exchange-info` и при необходимости `GET /market/symbols`.
+2. Синхронизировать часы через `GET /market/time`.
+3. Получить справочники рынков и сетей.
 4. Выполнять приватные запросы с HMAC-подписью.
-5. Для событий и статусов использовать private WebSocket параллельно с REST.
+5. Держать private WebSocket как live-источник пользовательских изменений.
 
 ## См. также
 
 - [../auth/api-key-rest.md](../auth/api-key-rest.md)
+- [../concepts.md](../concepts.md)
+- [../errors.md](../errors.md)
+- [market.md](market.md)
+- [spot.md](spot.md)
+- [accounts.md](accounts.md)
 - [../ws/overview.md](../ws/overview.md)
-- [../flows/quickstart.md](../flows/quickstart.md)

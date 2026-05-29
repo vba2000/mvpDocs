@@ -1,14 +1,12 @@
 # Документация внешней интеграции CEX
 
-Документация описывает только те REST API и WebSocket-сценарии, которые пригодны для интеграции по `API key` и HMAC-подписи. Browser login, session-only методы, operator-only и admin-only API в этой версии не документируются как внешние интеграционные контракты.
+Документация описывает внешний интеграционный контракт для `api/v1/gateway` и public/private WebSocket. В центре внимания только сценарии внешнего клиента: публичный read-only REST, пользовательский REST по `API key` и streaming через public/private WS.
 
 ## Тестовая среда
 
 | Назначение | URL |
 |------------|-----|
 | REST Gateway | `https://cex-test.web3tech.ru/api/v1/gateway` |
-| Swagger UI | [https://cex-test.web3tech.ru/api/v1/gateway/swagger-ui/index.html#](https://cex-test.web3tech.ru/api/v1/gateway/swagger-ui/index.html#) |
-| OpenAPI JSON | [https://cex-test.web3tech.ru/api/v1/gateway/v3/api-docs](https://cex-test.web3tech.ru/api/v1/gateway/v3/api-docs) |
 | Test stand | [https://cex-test.web3tech.ru/](https://cex-test.web3tech.ru/) |
 | WebSocket public | `wss://cex-test.web3tech.ru/api/v1/ws-gw/ws/public` |
 | WebSocket private | `wss://cex-test.web3tech.ru/api/v1/ws-private/ws/private` |
@@ -17,40 +15,42 @@
 
 ## Что входит в документацию
 
-- Публичные REST market-методы.
-- Приватные REST-методы, доступные внешнему клиенту по `API key`: `spot`, `accounts`, `rfq` taker-side, `aggregate-price`.
-- Управление API keys.
+- Публичные read-only REST-методы: `market`, `network`, публичный snapshot `spot/orderbook`.
+- Приватные REST-методы, доступные внешнему клиенту по `API key`: `spot`, `accounts`, `deposit-addresses`, `rfq` taker-side, `aggregate-price`.
+- Аутентификация по `API key` и HMAC для REST и private WebSocket.
 - Публичный и приватный WebSocket, включая режим `format=json`.
 - Интеграционные флоу с пошаговым описанием запроса, ответа и бизнес-смысла.
 
 ## Что исключено
 
-- Session-only `/auth/*`, кроме операций управления `API key`.
-- Browser/OAuth flow.
-- `admin` и `users` API.
-- Operator-only параметры и сценарии, если они не нужны обычной внешней интеграции.
-- Market maker-only RFQ API и MM WebSocket-потоки как часть общей интеграции по API key.
+- Back-office и внутренние сервисы.
+- `admin`, `users`, `internal` и browser onboarding.
+- Операторские impersonation-сценарии.
+- Market maker-only сценарии, которые не относятся к обычной внешней интеграции.
 
 ## Структура документации
 
-1. [Аутентификация REST по API key](auth/api-key-rest.md)
-2. [Аутентификация private WebSocket](auth/api-key-websocket.md)
-3. [Примеры подписи и запросов](auth/signing-examples.md)
-4. [Обзор REST API](rest/overview.md)
-5. [Market data](rest/market.md)
-6. [Spot trading](rest/spot.md)
-7. [Accounts](rest/accounts.md)
-8. [RFQ taker API](rest/rfq.md)
-9. [Aggregate price](rest/aggregate-price.md)
-10. [Обзор WebSocket](ws/overview.md)
-11. [Public WebSocket](ws/public.md)
-12. [Private WebSocket](ws/private.md)
-13. [JSON-формат сообщений](ws/message-format-json.md)
-14. [Protobuf/binary-формат](ws/message-format-protobuf.md)
-15. [Интеграционные сценарии](flows/quickstart.md)
+1. [Основные понятия](concepts.md)
+2. [Каталог ошибок](errors.md)
+3. [Аутентификация REST по API key](auth/api-key-rest.md)
+4. [Аутентификация private WebSocket](auth/api-key-websocket.md)
+5. [Примеры подписи и запросов](auth/signing-examples.md)
+6. [Обзор REST API](rest/overview.md)
+7. [Market data](rest/market.md)
+8. [Spot trading](rest/spot.md)
+9. [Accounts](rest/accounts.md)
+10. [RFQ taker API](rest/rfq.md)
+11. [Aggregate price](rest/aggregate-price.md)
+12. [Обзор WebSocket](ws/overview.md)
+13. [Public WebSocket](ws/public.md)
+14. [Private WebSocket](ws/private.md)
+15. [JSON-формат сообщений](ws/message-format-json.md)
+16. [Protobuf/binary-формат](ws/message-format-protobuf.md)
+17. [Интеграционные сценарии](flows/quickstart.md)
 
 ## Принципы чтения
 
-- Swagger и OpenAPI остаются основным источником формальных схем DTO и enum.
-- Эта документация дополняет Swagger: объясняет бизнес-флоу, порядок вызовов, правила подписи, ограничения, side effects и типовые ошибки.
-- Если OpenAPI и фактическое поведение сервера расходятся, в тексте это отмечается отдельно.
+- Источник правды для этой документации: актуальные backend contracts, DTO, handlers, security rules и runtime validation в коде.
+- Эта документация описывает не только поля запросов, но и бизнес-флоу, правила подписи, side effects, ограничения и реальные ограничения исполнения.
+- Если описания интерфейсов и фактическое поведение gateway/service слоя расходятся, в тексте приоритет отдается коду исполнения и это отмечается явно.
+- В спецификации используются оба формата идентификаторов рынков: `BTC/USDT` и `BTC_USDT`. Разница и правила применения описаны в [concepts.md](concepts.md).

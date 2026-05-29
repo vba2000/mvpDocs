@@ -1,86 +1,12 @@
 syntax = "proto3";
 
 import "google/protobuf/timestamp.proto";
+import "ws_common.proto";
 
 package com.web3tech.cex.ws.proto;
 
 option java_package = "com.web3tech.cex.ws.proto.wsprivate";
 option java_multiple_files = true;
-
-message WsEnvelope {
-  int32 code = 1;
-  string msg = 2;
-  WsResult result = 3;
-  map<string, string> ext_info = 4;
-  int64 time = 5;
-}
-
-message WsResult {
-  oneof payload {
-    SubscribedEvent subscribed = 1;
-    UnsubscribedEvent unsubscribed = 2;
-    PingEvent ping = 3;
-    DataEvent data = 4;
-  }
-  string trace_id = 6;
-}
-
-message SubscribedEvent {
-  repeated string streams = 1;
-  string trace_id = 2;
-}
-
-message UnsubscribedEvent {
-  repeated string streams = 1;
-  string trace_id = 2;
-}
-
-message PingEvent {
-  string trace_id = 1;
-}
-
-message DataEvent {
-  string stream = 1;
-  bytes data = 2;
-  string trace_id = 3;
-}
-
-enum WsErrorCode {
-  WS_ERROR_CODE_UNSPECIFIED = 0;
-  SUBSCRIPTION_LIMIT_EXCEEDED = 1;
-  INVALID_STREAM = 2;
-  STREAM_NOT_SUBSCRIBED = 3;
-  INVALID_MESSAGE = 4;
-  AUTHENTICATION_REQUIRED = 5;
-  RATE_LIMIT_EXCEEDED = 6;
-  INTERNAL_ERROR = 7;
-}
-
-message SubscribeMessage {
-  repeated string streams = 1;
-  string trace_id = 2;
-}
-
-message UnsubscribeMessage {
-  repeated string streams = 1;
-  string trace_id = 2;
-}
-
-message PongMessage {
-  string trace_id = 1;
-}
-
-enum QuoteSideWs {
-  QUOTE_SIDE_WS_UNSPECIFIED = 0;
-  BID_WS = 1;
-  ASK_WS = 2;
-}
-
-message PriceLevelProto {
-  string price = 1;
-  string size = 2;
-  string trace_id = 3;
-}
 
 message PrivateWsClientMessage {
   oneof payload {
@@ -326,4 +252,28 @@ message FirmQuoteRequestEvent {
   repeated int64 provider_ids = 6;
   google.protobuf.Timestamp created_at = 7;
   string trace_id = 8;
+}
+
+message DepositOperationNotificationProto {
+  string event = 1;
+  string deposit_id = 2;
+  int64 user_id = 3;
+  string amount = 4;
+  string token = 5;
+  string status = 6;
+  string updated_at = 7;
+  string trace_id = 8;
+  string event_type = 9;
+}
+
+message UserNotificationProto {
+  oneof payload {
+    DepositOperationNotificationProto deposit = 1;
+  }
+  string trace_id = 2;
+}
+
+message UserNotificationBatchProto {
+  repeated UserNotificationProto events = 1;
+  string trace_id = 2;
 }

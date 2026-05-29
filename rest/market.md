@@ -1,60 +1,108 @@
-# REST: market data
+# REST: market and public reference data
 
 ## Назначение
 
-Группа `/market/*` дает публичные рыночные данные. Эти методы не требуют `API key`, используются для инициализации интеграции, синхронизации времени, построения UI/аналитики и предварительной валидации торговых запросов.
+Этот раздел покрывает публичный read-only слой, который нужен до первой приватной интеграции:
 
-Базовый префикс: `GET https://cex-test.web3tech.ru/api/v1/gateway/market/*`
+- market data и справочники рынков;
+- данные по blockchain networks;
+- публичный snapshot orderbook;
+- mark prices и RFQ market universe.
+
+Эти методы не требуют `API key`.
 
 ## Набор методов
 
-| Метод | Путь | Бизнес-смысл |
-|------|------|--------------|
-| `GET` | `/market/time` | Серверное время для синхронизации часов клиента |
-| `GET` | `/market/config` | Конфигурация charting/market data |
+| Метод | Путь | Назначение |
+|------|------|------------|
+| `GET` | `/market/time` | Синхронизация часов клиента |
+| `GET` | `/market/config` | Конфигурация charting |
 | `GET` | `/market/symbols` | Карточка одного символа |
 | `GET` | `/market/search` | Поиск рынков |
 | `GET` | `/market/history` | OHLCV история |
-| `GET` | `/market/exchange-info` | Каталог spot markets и торговых ограничений |
+| `GET` | `/market/exchange-info` | Каталог spot markets и торговых правил |
 | `GET` | `/market/rfq-exchange-info` | Каталог RFQ markets |
 | `GET` | `/market/recent-trade` | Последние публичные сделки |
-| `GET` | `/market/tickers` | 24h ticker snapshot |
+| `GET` | `/market/tickers` | 24h snapshot по рынкам |
+| `GET` | `/market/mark-prices` | Текущие mark prices |
+| `GET` | `/network` | Публичный список сетей и активов |
+| `GET` | `/spot/orderbook` | Публичный snapshot стакана по рынку |
 
 ## Рекомендуемый порядок использования
 
 1. `GET /market/time`
 2. `GET /market/exchange-info`
-3. `GET /market/symbols` для конкретного инструмента
-4. `GET /market/tickers` и/или public WebSocket для рыночных обновлений
-5. `GET /market/history` для построения свечей
+3. `GET /market/symbols`
+4. `GET /network`
+5. `GET /market/tickers` и public WebSocket
 
-## Детали по методам
+## Ключевые методы
 
 ### `GET /market/time`
 
-Используется для выравнивания часов клиента перед приватными REST и private WS запросами.
+Используется для выравнивания часов клиента перед приватными REST и private WebSocket запросами.
 
-Ответ:
+Фактический ответ содержит три поля:
 
-- `result.time` — время сервера в миллисекундах.
+- `timeSec`
+- `timeMs`
+- `timeNano`
+
+Для HMAC-интеграции обычно используется `timeMs`.
+
+### `GET /market/config`
+
+Возвращает конфигурацию charting-совместимого market data слоя.
+
+Ключевые поля `ConfigDto`:
+
+- `supportedResolutions`
+- `supportsGroupRequest`
+- `supportsMarks`
+- `supportsSearch`
+- `supportsTimescaleMarks`
+- `supportsTime`
+
+Даже если клиент не строит UI-графики напрямую, этот метод полезен как справочник допустимых resolution для history/charting use cases.
 
 ### `GET /market/exchange-info`
 
 Главная точка входа для spot-интеграции.
 
-Что получает клиент:
+Метод возвращает по рынкам:
 
-- список активных рынков;
-- `baseAsset` и `quoteAsset`;
-- точность по активам;
-- список поддерживаемых `orderTypes`;
-- текущий статус рынка.
+- `symbol`, `status`, `baseAsset`, `quoteAsset`;
+- precision и шаги цены/объема;
+- `tickSize`, `lotSize`, `minQty`, `maxQty`, `minNotional`;
+- поддерживаемые `orderTypes`;
+- поддерживаемые `timeInForceModes`;
+- `executionFlags`;
+- защитные ограничения по price protection.
 
-Зачем вызывать:
+Именно этот метод нужен, чтобы валидировать ордера до отправки.
 
-- построить каталог инструментов;
-- валидировать типы ордеров до отправки;
-- понять доступность рынка для торговли.
+Как читать поля рынка:
+
+| Поле | Значение для интегратора |
+|------|--------------------------|
+| `symbol` | market id вида `BTC_USDT` |
+| `status` | текущая торговая доступность рынка |
+| `baseAssetPrecision` / `quoteAssetPrecision` | точность отображения активов |
+| `pricePrecision` / `qtyPrecision` | точность торговых полей |
+| `tickSize` / `lotSize` | минимальные шаги цены и количества |
+| `minQty` / `maxQty` | границы количества |
+| `minNotional` | нижняя граница стоимости ордера |
+| `orderTypes` | допустимые типы ордеров |
+| `timeInForceModes` | допустимые режимы исполнения |
+| `executionFlags` | специальные execution-возможности рынка |
+| `limit*PercentProtection` / `market*PercentProtection` | защитные price bounds |
+
+### `GET /market/rfq-exchange-info`
+
+Справочник RFQ рынков. Нужен до вызовов `/rfq/*`, чтобы проверить:
+
+- есть ли рынок в RFQ universe;
+- какие precision и статусы действуют для него.
 
 ### `GET /market/symbols`
 
@@ -64,84 +112,102 @@ Query:
 |----------|-----|------------|------------|
 | `symbol` | string | да | Символ вида `BTC/USDT` |
 
-Возвращает детальную карточку символа: scale, resolutions, exchange metadata, intraday capability.
+Возвращает карточку инструмента для chart-интеграции.
+
+Важно: этот endpoint использует формат символа вида `BTC/USDT`, а большая часть торговых и WS-сценариев работает с `BTC_USDT`.
 
 ### `GET /market/search`
 
-Подходит для поисковых строк и symbol picker.
-
-Query:
+Используется в symbol picker и поисковых формах.
 
 | Параметр | Тип | Обязателен | Назначение |
 |----------|-----|------------|------------|
 | `query` | string | да | Строка поиска |
-| `type` | string | нет | Фильтр типа инструмента |
-| `exchange` | string | нет | Фильтр биржи/источника |
+| `type` | string | нет | Фильтр типа |
+| `exchange` | string | нет | Фильтр площадки |
 | `limit` | integer | нет | Максимум результатов |
 
 ### `GET /market/history`
 
-Нужен для свечей и backfill market data.
-
-Query:
+Backfill OHLCV свечей.
 
 | Параметр | Тип | Обязателен | Назначение |
 |----------|-----|------------|------------|
 | `symbol` | string | да | Символ вида `BTC/USDT` |
-| `resolution` | string | да | Таймфрейм, например `1`, `5`, `15`, `60`, `1D`, `1W` |
-| `from` | integer | да | Начало интервала, Unix timestamp в секундах |
-| `to` | integer | да | Конец интервала, Unix timestamp в секундах |
+| `resolution` | string | да | Таймфрейм |
+| `from` | integer | да | Начало диапазона в Unix seconds |
+| `to` | integer | да | Конец диапазона в Unix seconds |
 | `limit` | integer | нет | Максимум свечей |
 
-Важно: `from` и `to` в OpenAPI заданы в секундах, а не в миллисекундах.
+Важно: `from` и `to` задаются в секундах, не в миллисекундах.
 
 ### `GET /market/tickers`
 
-Используется для 24h snapshot рынка.
-
-Query:
+24h snapshot для UI, market lists и initial market state.
 
 | Параметр | Тип | Обязателен | Назначение |
 |----------|-----|------------|------------|
 | `category` | string | нет | Категория рынка |
-| `symbol` | string | нет | Фильтр по одному рынку |
+| `symbol` | string | нет | Один рынок |
 | `baseCoin` | string | нет | Фильтр по базовому активу |
-
-Возвращает `lastPrice`, `bid1Price`, `ask1Price`, `volume24h`, `turnover24h`, `highPrice24h`, `lowPrice24h`.
 
 ### `GET /market/recent-trade`
 
-Нужен для блока recent trades и начальной подкачки перед переходом на WebSocket.
-
-Query:
+Начальная подкачка recent trades перед переходом на public WebSocket.
 
 | Параметр | Тип | Обязателен | Назначение |
 |----------|-----|------------|------------|
-| `symbol` | string | нет | Символ вида `BTC_USDT` |
-| `limit` | integer | нет | Число записей, максимум 100 |
+| `symbol` | string | нет | Например `BTC_USDT` |
+| `limit` | integer | нет | До 100 записей |
 
-### `GET /market/config`
+### `GET /market/mark-prices`
 
-Служебный метод для chart- и widget-интеграций. Возвращает поддерживаемые resolutions и capability flags.
+Возвращает текущие mark prices.
 
-### `GET /market/rfq-exchange-info`
+| Параметр | Тип | Обязателен | Назначение |
+|----------|-----|------------|------------|
+| `market` | string | нет | Фильтр по одному рынку |
 
-Каталог RFQ-рынков. Используется до вызовов `/rfq/*`, чтобы понять допустимые пары и precision.
+Метод полезен для аналитики и риск-контроля; это отдельный слой данных, не заменяющий торговый ticker.
 
-## Типичные ошибки
+### `GET /network`
 
-- Некорректный `symbol` или `resolution` -> бизнес-ошибка в `result`/`extInfo`.
-- Неверный диапазон времени -> пустой набор или ошибка валидации.
-- Использование `/` и `_` в разных методах: проверяйте формат символа по конкретному endpoint.
+Публичный список blockchain networks и их активов.
+
+| Параметр | Тип | Обязателен | Назначение |
+|----------|-----|------------|------------|
+| `network` | string | нет | Фильтр по shortname сети |
+| `asset` | string | нет | Фильтр по активу |
+
+Этот метод нужен до депозитных и funding-сценариев.
+
+### `GET /spot/orderbook`
+
+Публичный snapshot стакана по рынку.
+
+| Параметр | Тип | Обязателен | Назначение |
+|----------|-----|------------|------------|
+| `symbol` | string | да | Рынок, например `BTC_USDT` |
+| `step` | integer | нет | Агрегация цены по `10^step` |
+| `size` | integer | нет | Количество уровней на сторону, `0` для полного cached snapshot |
+
+Это REST snapshot, а не поток. Он нужен:
+
+- для initial book load;
+- для восстановления состояния после разрыва public WS;
+- для low-frequency UI use cases.
 
 ## Что важно бизнес-аналитику
 
-- `exchange-info` и `rfq-exchange-info` это справочники доступных рынков.
-- `tickers` и public WebSocket закрывают разные задачи: snapshot против потоковых обновлений.
-- `history` это исторический backfill, а не low-latency feed.
+- `exchange-info` и `rfq-exchange-info` это справочники доступных рынков и правил, а не просто каталог символов.
+- Символ `BTC/USDT` и market id `BTC_USDT` не взаимозаменяемы без учета контекста endpoint.
+- `tickers` и public WebSocket решают разные задачи: snapshot против live feed.
+- `spot/orderbook` нужен как точка восстановления, а не как замена WS.
+- `mark-prices` и торговые tickers нельзя считать одним и тем же источником цены.
 
 ## См. также
 
 - [overview.md](overview.md)
+- [../concepts.md](../concepts.md)
 - [../ws/public.md](../ws/public.md)
 - [../flows/quickstart.md](../flows/quickstart.md)

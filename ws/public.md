@@ -61,15 +61,38 @@ URL тестовой среды:
 - `stream`
 - `data`
 
+Важная деталь по payload:
+
+- orderbook может приходить как snapshot, single delta или batched deltas;
+- trades в live feed обычно приходят батчами `TradeBatchProto`, а не одиночными сделками;
+- в orderbook payload используются не только `market_seq`, но и `matcher_seq`.
+
 ## Бизнес-смысл потоков
 
 ### `spot/orderbook.<market_id>`
 
 Для построения depth, best bid/ask, мониторинга ликвидности и книг заявок.
 
+Типовые payloads:
+
+- `OrderbookSnapshotProto`
+- `OrderbookDeltaProto`
+- `OrderbookDeltaBatchProto`
+
+Практически для клиента это означает, что после snapshot нужно уметь применять последующие deltas и batched deltas.
+
+Recommended pattern:
+
+1. получить initial snapshot;
+2. сохранить текущий `seq_num` и `matcher_seq`;
+3. последовательно применять `delta` и `delta_batch`;
+4. при разрыве соединения или нарушении последовательности заново брать REST snapshot.
+
 ### `spot/trades.<market_id>`
 
 Для tape, recent trades, activity feed, trade analytics.
+
+В runtime-потоке сделки чаще доставляются батчами, поэтому клиент должен уметь разбирать массив `trades[]`, а не только один trade event.
 
 ### `spot/ticker.<market_id>`
 
@@ -88,6 +111,23 @@ URL тестовой среды:
 - Public socket не принимает private streams.
 - Сервер ограничивает количество подписок на одну сессию.
 - Клиент обязан отвечать `pong` на heartbeat.
+- Public socket не предназначен для пользовательских событий, депозитных уведомлений и торговых команд.
+
+## `matcher_seq` и `seq_num`
+
+- `seq_num` помогает клиенту контролировать порядок событий внутри stream feed;
+- `matcher_seq` отражает последовательность matcher-side книги заявок;
+- для orderbook recovery безопаснее ориентироваться не на "догоняющие" эвристики, а на полный resync после потери последовательности.
+
+## Recovery после разрыва
+
+Если клиент потерял public WS:
+
+1. открыть новое соединение;
+2. заново подписаться на нужные streams;
+3. для `spot/orderbook.*` взять `GET /spot/orderbook`;
+4. только после этого возобновить применение live deltas;
+5. recent trades/ticker при необходимости добрать через публичные REST endpoints.
 
 ## Когда использовать public WS вместо REST
 
